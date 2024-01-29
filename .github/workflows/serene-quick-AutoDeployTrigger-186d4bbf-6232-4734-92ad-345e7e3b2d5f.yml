@@ -1,0 +1,43 @@
+name: Trigger auto deployment for serene-quick
+
+# When this action will be executed
+on:
+  # Automatically trigger it when detected changes in repo
+  push:
+    branches: 
+      [ master ]
+    paths:
+    - '**'
+    - '.github/workflows/serene-quick-AutoDeployTrigger-186d4bbf-6232-4734-92ad-345e7e3b2d5f.yml'
+
+  # Allow manual trigger 
+  workflow_dispatch:
+      
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout to the branch
+        uses: actions/checkout@v2
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.SERENEQUICK_AZURE_CREDENTIALS }}
+
+      - name: Build and push container image to registry
+        uses: azure/container-apps-deploy-action@v2
+        with:
+          appSourcePath: ${{ github.workspace }} 
+          registryUrl: serene.azurecr.io
+          registryUsername: ${{ secrets.SERENEQUICK_REGISTRY_USERNAME }}
+          registryPassword: ${{ secrets.SERENEQUICK_REGISTRY_PASSWORD }}
+          containerAppName: serene-quick
+          resourceGroup: serene-env
+          imageToBuild: serene.azurecr.io/serene-quick:${{ github.sha }}
+          
+            
+
+     
+
