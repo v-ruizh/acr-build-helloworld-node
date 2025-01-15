@@ -1,0 +1,48 @@
+name: Trigger auto deployment for serene-app
+
+# When this action will be executed
+on:
+  # Automatically trigger it when detected changes in repo
+  push:
+    branches: 
+      [ master ]
+    paths:
+    - '**'
+    - '.github/workflows/serene-app-AutoDeployTrigger-b483d66e-d959-4156-af8a-2fda9ea58575.yml'
+
+  # Allow manual trigger 
+  workflow_dispatch:      
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions: 
+      id-token: write #This is required for requesting the OIDC JWT Token
+      contents: read #Required when GH token is used to authenticate with private repo
+
+    steps:
+      - name: Checkout to the branch
+        uses: actions/checkout@v2
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.SERENEAPP_AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.SERENEAPP_AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.SERENEAPP_AZURE_SUBSCRIPTION_ID }}
+
+      - name: Build and push container image to registry
+        uses: azure/container-apps-deploy-action@v2
+        with:
+          appSourcePath: ${{ github.workspace }}
+          _dockerfilePathKey_: _dockerfilePath_
+          registryUrl: serene.azurecr.io
+          registryUsername: ${{ secrets.SERENEAPP_REGISTRY_USERNAME }}
+          registryPassword: ${{ secrets.SERENEAPP_REGISTRY_PASSWORD }}
+          containerAppName: serene-app
+          resourceGroup: serene-env
+          imageToBuild: serene.azurecr.io/serene-app:${{ github.sha }}
+          _buildArgumentsKey_: |
+            _buildArgumentsValues_
+
+
